@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { ConversationLongPressModal } from '@/components/ConversationLongPressModal';
+import { ShimmerLoading } from '@/components/ShimmerLoading';
 import {
   X,
   MessageSquare,
@@ -27,6 +29,7 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   onNewChat?: () => void;
+  onConversationSelect?: (id: string) => void;
 }
 
 interface Conversation {
@@ -44,7 +47,7 @@ const exploreItems = [
   { icon: Settings, title: "Voice Chat", description: "Speak with AI" },
 ];
 
-export const Sidebar = ({ isOpen, onClose, onNewChat }: SidebarProps) => {
+export const Sidebar = ({ isOpen, onClose, onNewChat, onConversationSelect }: SidebarProps) => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -52,6 +55,9 @@ export const Sidebar = ({ isOpen, onClose, onNewChat }: SidebarProps) => {
   const [activeSection, setActiveSection] = useState<'chat' | 'explore' | 'settings' | 'help'>('chat');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [showConvLongPress, setShowConvLongPress] = useState(false);
+  const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
+  const [loadingConversation, setLoadingConversation] = useState(false);
 
   useEffect(() => {
     if (user && isOpen) {
@@ -251,7 +257,13 @@ export const Sidebar = ({ isOpen, onClose, onNewChat }: SidebarProps) => {
                 </div>
 
                 <div className="px-4 pb-4 overflow-y-auto max-h-[calc(100vh-300px)]">
-                  {filteredConversations.length === 0 ? (
+                  {loadingConversation ? (
+                    <div className="space-y-4 p-4">
+                      <ShimmerLoading />
+                      <ShimmerLoading />
+                      <ShimmerLoading />
+                    </div>
+                  ) : filteredConversations.length === 0 ? (
                     <div className="text-center text-muted-foreground py-8">
                       <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>No conversations yet</p>
@@ -276,7 +288,19 @@ export const Sidebar = ({ isOpen, onClose, onNewChat }: SidebarProps) => {
                               onStartEdit={startEditing}
                               onSubmitEdit={handleTitleSubmit}
                               onDelete={deleteConversation}
-                              onPin={() => {}} // TODO: Implement pinning
+                              onPin={() => {}}
+                              onLongPress={() => {
+                                setSelectedConvId(conversation.id);
+                                setShowConvLongPress(true);
+                              }}
+                              onSelect={() => {
+                                if (onConversationSelect) {
+                                  setLoadingConversation(true);
+                                  onConversationSelect(conversation.id);
+                                  onClose();
+                                  setTimeout(() => setLoadingConversation(false), 500);
+                                }
+                              }}
                             />
                           ))}
                         </div>
@@ -300,7 +324,19 @@ export const Sidebar = ({ isOpen, onClose, onNewChat }: SidebarProps) => {
                               onStartEdit={startEditing}
                               onSubmitEdit={handleTitleSubmit}
                               onDelete={deleteConversation}
-                              onPin={() => {}} // TODO: Implement pinning
+                              onPin={() => {}}
+                              onLongPress={() => {
+                                setSelectedConvId(conversation.id);
+                                setShowConvLongPress(true);
+                              }}
+                              onSelect={() => {
+                                if (onConversationSelect) {
+                                  setLoadingConversation(true);
+                                  onConversationSelect(conversation.id);
+                                  onClose();
+                                  setTimeout(() => setLoadingConversation(false), 500);
+                                }
+                              }}
                             />
                           ))}
                         </div>
@@ -328,7 +364,7 @@ export const Sidebar = ({ isOpen, onClose, onNewChat }: SidebarProps) => {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border">
-            <h2 className="text-lg font-semibold">Copilot AI</h2>
+            <h2 className="text-lg font-semibold">SanGPT</h2>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-5 w-5" />
             </Button>
@@ -396,6 +432,23 @@ export const Sidebar = ({ isOpen, onClose, onNewChat }: SidebarProps) => {
           )}
         </div>
       </div>
+
+      <ConversationLongPressModal 
+        isOpen={showConvLongPress}
+        onClose={() => setShowConvLongPress(false)}
+        isPinned={conversations.find(c => c.id === selectedConvId)?.pinned || false}
+        onRename={() => {
+          const conv = conversations.find(c => c.id === selectedConvId);
+          if (conv) startEditing(conv);
+        }}
+        onPin={() => {
+          // TODO: Implement pinning
+          toast({ title: "Pin feature", description: "Coming soon" });
+        }}
+        onDelete={() => {
+          if (selectedConvId) deleteConversation(selectedConvId);
+        }}
+      />
     </>
   );
 };
@@ -409,6 +462,8 @@ interface ConversationItemProps {
   onSubmitEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onPin: (id: string) => void;
+  onLongPress: () => void;
+  onSelect: () => void;
 }
 
 const ConversationItem = ({
@@ -420,11 +475,34 @@ const ConversationItem = ({
   onSubmitEdit,
   onDelete,
   onPin,
+  onLongPress,
+  onSelect,
 }: ConversationItemProps) => {
   const isEditing = editingId === conversation.id;
 
+  const handleLongPressStart = (e: React.TouchEvent | React.MouseEvent) => {
+    const timer = setTimeout(() => onLongPress(), 2000);
+    if ('touches' in e) {
+      (e.currentTarget as HTMLElement).dataset.timer = String(timer);
+    }
+  };
+
+  const handleLongPressEnd = (e: React.TouchEvent | React.MouseEvent) => {
+    const timer = (e.currentTarget as HTMLElement).dataset.timer;
+    if (timer) clearTimeout(Number(timer));
+  };
+
   return (
-    <div className="group flex items-center gap-3 p-3 hover:bg-muted rounded-lg cursor-pointer transition-all duration-200">
+    <div 
+      className="group flex items-center gap-3 p-3 hover:bg-muted rounded-lg cursor-pointer transition-all duration-200"
+      onClick={onSelect}
+      onTouchStart={handleLongPressStart}
+      onTouchEnd={handleLongPressEnd}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onLongPress();
+      }}
+    >
       <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
       
       <div className="flex-1 min-w-0">
@@ -440,6 +518,7 @@ const ConversationItem = ({
               }
             }}
             onBlur={() => onSubmitEdit(conversation.id)}
+            onClick={(e) => e.stopPropagation()}
             className="h-8 text-sm"
             autoFocus
           />
@@ -451,46 +530,6 @@ const ConversationItem = ({
             </p>
           </>
         )}
-      </div>
-
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        {conversation.pinned && <Pin className="h-3 w-3 text-muted-foreground" />}
-        
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={(e) => {
-            e.stopPropagation();
-            onStartEdit(conversation);
-          }}
-          className="h-8 w-8"
-        >
-          <Edit2 className="h-3 w-3" />
-        </Button>
-        
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={(e) => {
-            e.stopPropagation();
-            onPin(conversation.id);
-          }}
-          className="h-8 w-8"
-        >
-          {conversation.pinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
-        </Button>
-        
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(conversation.id);
-          }}
-          className="h-8 w-8 text-destructive"
-        >
-          <Trash2 className="h-3 w-3" />
-        </Button>
       </div>
     </div>
   );

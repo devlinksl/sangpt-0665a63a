@@ -1,6 +1,6 @@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Copy, Type, Edit3, Volume2, Share2, RotateCcw, ChevronRight } from 'lucide-react';
+import { Copy, TextSelect, Volume2, Share2, RotateCcw } from 'lucide-react';
 
 interface LongPressModalProps {
   isOpen: boolean;
@@ -9,6 +9,7 @@ interface LongPressModalProps {
   onSelectText: () => void;
   onReadAloud: () => void;
   onRegenerate: () => void;
+  onShare?: () => void;
 }
 
 export const LongPressModal = ({ 
@@ -17,7 +18,8 @@ export const LongPressModal = ({
   onCopy,
   onSelectText,
   onReadAloud,
-  onRegenerate
+  onRegenerate,
+  onShare
 }: LongPressModalProps) => {
   const handleAction = (action: () => void) => {
     action();
@@ -28,68 +30,57 @@ export const LongPressModal = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md bottom-0 top-auto translate-y-0 slide-in-from-bottom animate-slide-in-bottom rounded-t-3xl rounded-b-none border-0 p-0">
         <div className="px-6 pt-6 pb-2">
-          <div className="w-12 h-1 bg-border mx-auto rounded-full mb-6" />
+          <div className="w-12 h-1 bg-border mx-auto rounded-full mb-4" />
+          <h3 className="text-center font-semibold text-lg mb-2">Message Actions</h3>
         </div>
         
-        <div className="px-6 pb-6 space-y-1">
+        <div className="flex flex-col gap-1 pb-6">
           <Button
             variant="ghost"
-            className="w-full justify-start text-left h-14 px-4 rounded-xl hover:bg-muted"
             onClick={() => handleAction(onCopy)}
+            className="w-full justify-start text-left h-auto py-4 px-6 rounded-none hover:bg-muted"
           >
-            <Copy className="w-5 h-5 mr-3" />
-            <span className="text-base">Copy</span>
+            <Copy className="h-5 w-5 mr-3" />
+            Copy
           </Button>
 
           <Button
             variant="ghost"
-            className="w-full justify-start text-left h-14 px-4 rounded-xl hover:bg-muted"
             onClick={() => handleAction(onSelectText)}
+            className="w-full justify-start text-left h-auto py-4 px-6 rounded-none hover:bg-muted"
           >
-            <Type className="w-5 h-5 mr-3" />
-            <span className="text-base">Select text</span>
+            <TextSelect className="h-5 w-5 mr-3" />
+            Select text
           </Button>
 
           <Button
             variant="ghost"
-            className="w-full justify-start text-left h-14 px-4 rounded-xl hover:bg-muted"
-            onClick={onClose}
-          >
-            <Edit3 className="w-5 h-5 mr-3" />
-            <span className="text-base">Edit in a page</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-left h-14 px-4 rounded-xl hover:bg-muted"
             onClick={() => handleAction(onReadAloud)}
+            className="w-full justify-start text-left h-auto py-4 px-6 rounded-none hover:bg-muted"
           >
-            <Volume2 className="w-5 h-5 mr-3" />
-            <span className="text-base">Read this aloud</span>
+            <Volume2 className="h-5 w-5 mr-3" />
+            Read aloud
           </Button>
 
           <Button
             variant="ghost"
-            className="w-full justify-start text-left h-14 px-4 rounded-xl hover:bg-muted"
-            onClick={onClose}
+            onClick={() => handleAction(onRegenerate)}
+            className="w-full justify-start text-left h-auto py-4 px-6 rounded-none hover:bg-muted"
           >
-            <Share2 className="w-5 h-5 mr-3" />
-            <span className="text-base">Share</span>
+            <RotateCcw className="h-5 w-5 mr-3" />
+            Regenerate
           </Button>
 
-          <div className="pt-2 border-t border-border">
+          {onShare && (
             <Button
               variant="ghost"
-              className="w-full justify-between text-left h-14 px-4 rounded-xl hover:bg-muted"
-              onClick={() => handleAction(onRegenerate)}
+              onClick={() => handleAction(onShare)}
+              className="w-full justify-start text-left h-auto py-4 px-6 rounded-none hover:bg-muted"
             >
-              <div className="flex items-center">
-                <RotateCcw className="w-5 h-5 mr-3" />
-                <span className="text-base">Regenerate</span>
-              </div>
-              <ChevronRight className="w-5 h-5" />
+              <Share2 className="h-5 w-5 mr-3" />
+              Share
             </Button>
-          </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

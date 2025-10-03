@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Check, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface CodeBlockProps {
   code: string;
@@ -32,7 +34,7 @@ export const CodeBlock = ({ code, language = 'text' }: CodeBlockProps) => {
   };
 
   return (
-    <div className="relative group my-4 rounded-xl overflow-hidden">
+    <div className="relative group my-4 rounded-xl overflow-hidden border border-gray-700">
       <div className="absolute right-2 top-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
         <Button
           variant="ghost"
@@ -44,15 +46,25 @@ export const CodeBlock = ({ code, language = 'text' }: CodeBlockProps) => {
         </Button>
       </div>
       
-      <div className="bg-black text-gray-100 p-1 px-3 text-xs font-mono border-b border-gray-700">
-        {language}
+      <div className="bg-[#1E1E1E] text-gray-300 px-4 py-2 text-xs font-mono border-b border-gray-700 flex items-center justify-between">
+        <span>{language}</span>
       </div>
       
-      <pre className="bg-black text-gray-100 p-4 overflow-x-auto">
-        <code className={`language-${language} text-sm font-mono whitespace-pre-wrap break-words`}>
+      <div className="bg-[#1E1E1E]">
+        <SyntaxHighlighter
+          language={language}
+          style={vscDarkPlus}
+          customStyle={{
+            margin: 0,
+            padding: '1rem',
+            background: '#1E1E1E',
+            fontSize: '0.875rem',
+          }}
+          wrapLongLines={true}
+        >
           {code}
-        </code>
-      </pre>
+        </SyntaxHighlighter>
+      </div>
     </div>
   );
 };

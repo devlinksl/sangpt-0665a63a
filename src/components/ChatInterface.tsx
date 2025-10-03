@@ -62,7 +62,7 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
   const [showLongPress, setShowLongPress] = useState(false);
   const [showAttachment, setShowAttachment] = useState(false);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState('gemini-2.0-flash-exp');
+  const [selectedModel, setSelectedModel] = useState('gemini');
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -178,11 +178,15 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
           ? messages.filter(m => m.role === 'user')
           : [...messages.filter(m => m.role === 'user'), ...(userMessage ? [userMessage] : [])];
 
-        const { data, error } = await supabase.functions.invoke('gemini-chat', {
+        // Determine which edge function to use based on selected model
+        const functionName = selectedModel === 'gemini' ? 'gemini-chat' : 'ai-chat';
+        const modelParam = selectedModel === 'gemini' ? 'gemini-2.0-flash-exp' : 'google/gemini-2.5-flash';
+
+        const { data, error } = await supabase.functions.invoke(functionName, {
           body: { 
             messages: messagesToSend.map(m => ({ role: m.role, content: m.content })),
             conversationId,
-            model: selectedModel
+            model: modelParam
           }
         });
 
@@ -246,6 +250,24 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
     setShowLongPress(true);
   };
 
+  const handleSelectText = () => {
+    const message = messages.find(m => m.id === selectedMessageId);
+    if (message) {
+      navigate('/text-selection', { state: { content: message.content } });
+    }
+  };
+
+  const handleShare = async () => {
+    const message = messages.find(m => m.id === selectedMessageId);
+    if (message && navigator.share) {
+      try {
+        await navigator.share({ text: message.content });
+      } catch (error) {
+        console.log('Share cancelled');
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gradient-to-b from-ai-light-blue to-ai-white dark:from-gray-900 dark:to-gray-800">
       <header className="flex items-center justify-between p-4 border-b border-border/10 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
@@ -257,7 +279,7 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
             onClick={() => setShowModelSelector(true)}
             className="text-lg font-semibold hover:bg-muted px-3 py-1 rounded-lg transition-colors"
           >
-            {messages.length > 0 ? 'New conversation' : 'Copilot'}
+            {messages.length > 0 ? 'New conversation' : 'SanGPT'}
           </button>
         </div>
 
@@ -270,7 +292,7 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
               <Button variant="ghost" size="icon" onClick={() => { setMessages([]); setCurrentConversationId(null); }}>
                 <Edit3 className="h-5 w-5" />
               </Button>
-              <Avatar className="h-8 w-8 bg-gradient-to-br from-ai-blue to-ai-purple cursor-pointer" onClick={() => navigate('/settings')}>
+              <Avatar className="h-8 w-8 bg-gradient-to-br from-ai-blue to-ai-purple cursor-pointer" onClick={() => navigate('/account')}>
                 <AvatarFallback className="bg-gradient-to-br from-ai-blue to-ai-purple text-white font-medium">
                   {user.user_metadata?.display_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'W'}
                 </AvatarFallback>
@@ -430,7 +452,7 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
           <div className="flex justify-between mt-2 text-xs text-muted-foreground">
             <button onClick={(e) => { createRipple(e); setShowModelSelector(true); }} className="flex items-center gap-1 hover:text-foreground transition-colors">
               <Sparkles className="h-3 w-3" />
-              {selectedModel}
+              {selectedModel === 'gemini' ? 'SanGPT (Gemini)' : 'SanGPT (Lovable AI)'}
             </button>
           </div>
         </div>
@@ -438,7 +460,21 @@ export const ChatInterface = ({ onOpenSidebar }: ChatInterfaceProps) => {
 
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       <ModelSelectorModal isOpen={showModelSelector} onClose={() => setShowModelSelector(false)} selectedModel={selectedModel} onSelectModel={setSelectedModel} />
-      <LongPressModal isOpen={showLongPress} onClose={() => setShowLongPress(false)} onCopy={() => { const m = messages.find(msg => msg.id === selectedMessageId); if(m) navigator.clipboard.writeText(m.content); }} onSelectText={() => {}} onReadAloud={() => {}} onRegenerate={handleRegenerate} />
+      <LongPressModal 
+        isOpen={showLongPress} 
+        onClose={() => setShowLongPress(false)} 
+        onCopy={() => { 
+          const m = messages.find(msg => msg.id === selectedMessageId); 
+          if(m) {
+            navigator.clipboard.writeText(m.content);
+            toast({ title: "Copied", description: "Message copied to clipboard" });
+          }
+        }} 
+        onSelectText={handleSelectText}
+        onReadAloud={() => toast({ title: "Read Aloud", description: "Text-to-speech feature coming soon" })} 
+        onRegenerate={handleRegenerate}
+        onShare={handleShare}
+      />
       <AttachmentModal isOpen={showAttachment} onClose={() => setShowAttachment(false)} onFileSelect={(f) => toast({ title: "File attached", description: f.name })} />
     </div>
   );

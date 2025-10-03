@@ -11,26 +11,20 @@ interface ModelSelectorModalProps {
 
 const models = [
   {
-    id: 'gemini-2.0-flash-exp',
-    name: 'Quick response',
-    description: 'Best for everyday conversation',
-    icon: Zap,
-    speed: '2-3 sec'
-  },
-  {
-    id: 'gemini-1.5-pro',
-    name: 'Think Deeper',
-    description: 'Better for more complex topics',
-    icon: Brain,
-    speed: '~30 sec'
-  },
-  {
-    id: 'gemini-1.5-flash',
-    name: 'Smart',
-    description: 'Thinks quickly or deeply based on the task',
+    id: 'gemini',
+    name: 'SanGPT (Gemini)',
+    description: 'Powered by Google Gemini API',
     icon: Sparkles,
-    speed: '~10 sec',
-    badge: 'New'
+    speed: '2-3 sec',
+    badge: 'Gemini'
+  },
+  {
+    id: 'lovable',
+    name: 'SanGPT (Lovable AI)',
+    description: 'Advanced AI with multiple capabilities',
+    icon: Brain,
+    speed: '3-5 sec',
+    badge: 'Lovable'
   }
 ];
 

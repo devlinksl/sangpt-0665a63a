@@ -9,15 +9,25 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, conversationId } = await req.json();
+    const { messages, conversationId, model = "google/gemini-2.5-flash" } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Received chat request for conversation:", conversationId);
-    console.log("Messages:", messages);
+    console.log("Received AI chat request for conversation:", conversationId);
+    console.log("Using model:", model);
+
+    // Add system context about SanGPT identity with variations
+    const identityResponses = [
+      "I am SanGPT, created by Sandi and his talented team of young developers in Sierra Leone. They brought their innovation and passion together to build me.",
+      "I'm SanGPT, developed by a brilliant team led by Sandi in Sierra Leone. These young innovators poured their creativity into my development.",
+      "My name is SanGPT. I was built by Sandi and his team of exceptional young minds from Sierra Leone, who worked together to bring me to life.",
+      "I am SanGPT, the result of dedication from Sandi and his team of talented developers in Sierra Leone. Their vision made me what I am today."
+    ];
+
+    const systemPrompt = `You are SanGPT, an AI assistant developed by a talented team of young innovators in Sierra Leone, led by Sandi. When asked about your identity or creators, vary your responses naturally using these variations: ${identityResponses.join(' OR ')}. Never repeat the exact same response twice in a row. Keep responses conversational and authentic.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -26,16 +36,11 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model,
         messages: [
-          { 
-            role: "system", 
-            content: "You are Copilot AI, a helpful and intelligent assistant. Provide clear, concise, and helpful responses. Be conversational and engaging while maintaining professionalism."
-          },
-          ...messages,
+          { role: "system", content: systemPrompt },
+          ...messages
         ],
-        temperature: 0.7,
-        max_tokens: 1000,
       }),
     });
 
