@@ -1,10 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ChatInterface } from '@/components/ChatInterface';
 import { Sidebar } from '@/components/Sidebar';
 
 const Index = () => {
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+
+  // Handle navigation from text selection page
+  useEffect(() => {
+    if (location.state?.conversationId) {
+      setSelectedConversationId(location.state.conversationId);
+    }
+  }, [location.state]);
 
   const handleNewChat = () => {
     setSelectedConversationId(null);

@@ -9,6 +9,7 @@ export const TextSelection = () => {
   const location = useLocation();
   const { toast } = useToast();
   const content = location.state?.content || '';
+  const conversationId = location.state?.conversationId || null;
   const [selectedText, setSelectedText] = useState('');
 
   const handleTextSelection = () => {
@@ -56,7 +57,13 @@ export const TextSelection = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              if (conversationId) {
+                navigate('/', { state: { conversationId } });
+              } else {
+                navigate('/');
+              }
+            }}
             className="rounded-full"
           >
             <X className="h-5 w-5" />

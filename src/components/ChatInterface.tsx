@@ -93,11 +93,12 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
-      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-      const hasScrolledUp = scrollTop < scrollHeight - clientHeight - 100;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      const isAtBottom = distanceFromBottom < 50;
       
-      userScrolledRef.current = hasScrolledUp;
-      setShowScrollButton(hasScrolledUp && !isNearBottom);
+      // Show button only when user has scrolled away from bottom
+      setShowScrollButton(!isAtBottom && scrollHeight > clientHeight);
+      userScrolledRef.current = !isAtBottom;
     };
 
     container.addEventListener('scroll', handleScroll);
@@ -579,11 +580,11 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         {showScrollButton && (
           <Button
             onClick={() => scrollToBottom()}
-            className="absolute bottom-6 right-6 rounded-full shadow-2xl z-10 h-12 w-12 bg-gradient-to-br from-ai-blue to-ai-purple hover:scale-110 transition-all duration-200 animate-fade-in"
+            className="fixed bottom-24 right-6 rounded-full shadow-lg z-50 h-12 w-12 bg-background border-2 border-primary hover:bg-primary hover:text-primary-foreground hover:scale-110 transition-all duration-300 animate-fade-in"
             size="icon"
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
             </svg>
           </Button>
         )}
