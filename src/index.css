@@ -128,7 +128,29 @@ All colors MUST be HSL.
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
+code, pre {
+  white-space: pre-wrap; /* allows wrapping */
+  word-break: break-word;
+  overflow-x: auto; /* adds inner scroll if needed */
+  max-width: 100%;
+  display: block;
+}
 
+.code-card {
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: 12px;
+  background: rgba(20, 20, 20, 0.9);
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .code-card {
+    font-size: 0.9rem;
+    padding: 0.8rem;
+  }
+}
 @layer base {
   * {
     @apply border-border;
