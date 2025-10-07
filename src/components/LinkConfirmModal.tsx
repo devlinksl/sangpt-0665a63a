@@ -9,9 +9,19 @@ interface LinkConfirmModalProps {
 }
 
 export const LinkConfirmModal = ({ isOpen, onClose, url }: LinkConfirmModalProps) => {
+  // Extract clean URL from markdown or bracketed formats
+  const extractUrl = (raw: string) => {
+    // Match markdown-style [text](url)
+    const markdownMatch = raw.match(/\((https?:\/\/[^\s)]+)\)/);
+    if (markdownMatch) return markdownMatch[1];
+
+    // Remove surrounding brackets if present
+    return raw.replace(/^\[|\]$/g, '').trim();
+  };
+
+  const cleanUrl = extractUrl(url);
+
   const handleConfirm = () => {
-    // Make sure brackets aren't included when opening the link
-    const cleanUrl = url.replace(/^\[|\]$/g, '');
     window.open(cleanUrl, '_blank', 'noopener,noreferrer');
     onClose();
   };
@@ -29,7 +39,7 @@ export const LinkConfirmModal = ({ isOpen, onClose, url }: LinkConfirmModalProps
         <div className="py-4">
           <p className="text-sm text-muted-foreground mb-2">You are about to open:</p>
           <p className="text-sm font-mono bg-muted p-3 rounded-lg break-all">
-            {url.replace(/^\[|\]$/g, '')}
+            {cleanUrl}
           </p>
         </div>
 
