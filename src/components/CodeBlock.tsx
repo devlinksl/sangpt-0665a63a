@@ -67,7 +67,7 @@ export const CodeBlock = ({ code, language = 'text' }: CodeBlockProps) => {
             padding: '1rem',
             background: 'transparent',
             fontSize: '0.9rem',
-            width: '80%',
+            width: '100%',
             maxWidth: '100%',
             overflowX: 'auto',
             overflowY: 'hidden',

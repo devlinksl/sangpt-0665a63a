@@ -32,10 +32,10 @@ export default function DeepResearch() {
 
     try {
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: {
-          messages: [{
-            role: 'user',
-            content: `Conduct comprehensive research on: ${topic}. Provide detailed information, key facts, recent developments, and relevant insights.`
+        body: { 
+          messages: [{ 
+            role: 'user', 
+            content: `Conduct comprehensive research on: ${topic}. Provide detailed information, key facts, recent developments, and relevant insights.` 
           }],
           model: 'google/gemini-2.5-flash'
         }
@@ -49,115 +49,6 @@ export default function DeepResearch() {
     } finally {
       setIsResearching(false);
     }
-  };
-
-const formatResponse = (text: string) => {
-  const lines = text.split('\n').map((line, index) => {
-    const trimmed = line.trim();
-
-    // Enlarged text: *text*
-    if (/^\*.*\*$/.test(trimmed)) {
-      return (
-        <p key={index} className="text-2xl font-bold text-blue-600 mb-4">
-          {trimmed.replace(/^\*|\*$/g, '')}
-        </p>
-      );
-    }
-
-    // Headings: ## Heading
-    if (/^##\s/.test(trimmed)) {
-      return (
-        <h2 key={index} className="text-xl font-semibold mt-6 mb-2 text-cyan-700">
-          {trimmed.replace(/^##\s/, '')}
-        </h2>
-      );
-    }
-
-    // Bullet points: - item
-    if (/^-\s/.test(trimmed)) {
-      return (
-        <li key={index} className="ml-6 list-disc text-base text-muted-foreground">
-          {trimmed.replace(/^- /, '')}
-        </li>
-      );
-    }
-
-    // Blockquotes: > quote
-    if (/^>\s/.test(trimmed)) {
-      return (
-        <blockquote key={index} className="border-l-4 pl-4 italic text-muted-foreground">
-          {trimmed.replace(/^>\s/, '')}
-        </blockquote>
-      );
-    }
-
-    // Inline *bold* inside a sentence
-    const inlineBold = trimmed.split(/(\*[^*]+\*)/).map((chunk, i) => {
-      if (/^\*[^*]+\*$/.test(chunk)) {
-        return <strong key={i}>{chunk.replace(/^\*|\*$/g, '')}</strong>;
-      }
-      return <span key={i}>{chunk}</span>;
-    });
-
-    return (
-      <p key={index} className="text-sm text-foreground mb-2">
-        {inlineBold}
-      </p>
-    );
-  });
-
-  return <div>{lines}</div>;
-};
-  
-  const formatResponse = (text: string) => {
-    const lines = text.split('\n').map((line, index) => {
-      const trimmed = line.trim();
-
-      // Enlarged text: *text*
-      if (/^\*.*\*$/.test(trimmed)) {
-        return (
-          <p key={index} className="text-2xl font-bold text-blue-600 mb-4">
-            {trimmed.replace(/^\*|\*$/g, '')}
-          </p>
-        );
-      }
-
-      // Headings: ## Heading
-      if (/^##\s/.test(trimmed)) {
-        return (
-          <h2 key={index} className="text-xl font-semibold mt-6 mb-2 text-cyan-700">
-            {trimmed.replace(/^##\s/, '')}
-          </h2>
-        );
-      }
-
-      // Bullet points: - item
-      if (/^-\s/.test(trimmed)) {
-        return (
-          <li key={index} className="ml-6 list-disc text-base text-muted-foreground">
-            {trimmed.replace(/^- /, '')}
-          </li>
-        );
-      }
-
-      // Blockquotes: > quote
-      if (/^>\s/.test(trimmed)) {
-        return (
-          <blockquote key={index} className="border-l-4 pl-4 italic text-muted-foreground">
-            {trimmed.replace(/^>\s/, '')}
-          </blockquote>
-        );
-      }
-
-      // Default paragraph
-      return (
-        <p key={index} className="text-sm text-foreground mb-2">
-          {trimmed}
-        </p>
-      );
-    });
-
-    return <div>{lines}</div>;
   };
 
   return (
@@ -186,9 +77,9 @@ const formatResponse = (text: string) => {
             placeholder="Enter a topic to research... (e.g., 'Quantum Computing Applications')"
             className="min-h-[100px] resize-none"
           />
-
-          <Button
-            onClick={handleResearch}
+          
+          <Button 
+            onClick={handleResearch} 
             disabled={isResearching || !topic.trim()}
             className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
           >
@@ -206,7 +97,9 @@ const formatResponse = (text: string) => {
         {result && !isResearching && (
           <div className="bg-card rounded-2xl p-6 animate-fade-in">
             <h3 className="text-lg font-semibold mb-4">Research Results</h3>
-            <div className="space-y-2">{formatResponse(result)}</div>
+            <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
+              {result}
+            </div>
           </div>
         )}
       </div>
