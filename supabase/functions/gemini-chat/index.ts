@@ -74,14 +74,39 @@ serve(async (req) => {
       
       const errorText = await response.text();
       console.error("Gemini API error:", response.status, errorText);
-      throw new Error("Failed to get Gemini response");
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log("Gemini API response:", JSON.stringify(data));
+
+    // Check for safety blocking or other error responses
+    if (data.promptFeedback?.blockReason) {
+      console.error("Content blocked:", data.promptFeedback.blockReason);
+      return new Response(JSON.stringify({ 
+        error: "Content was blocked by safety filters. Please rephrase your message." 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!aiResponse) {
-      throw new Error("No response from Gemini");
+      console.error("No text in response. Full response:", JSON.stringify(data));
+      
+      // Check if content was blocked
+      if (data.candidates?.[0]?.finishReason === "SAFETY") {
+        return new Response(JSON.stringify({ 
+          error: "Response blocked by safety filters. Please try a different question." 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      throw new Error("No response from Gemini - unexpected response structure");
     }
 
     console.log("Gemini Response:", aiResponse);
