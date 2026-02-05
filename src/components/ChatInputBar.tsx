@@ -44,10 +44,18 @@
    disabled
  }: ChatInputBarProps) => {
    const [isFocused, setIsFocused] = useState(false);
+  const [isSending, setIsSending] = useState(false);
    const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { lightTap, mediumTap } = useHaptics();
    
    const showActions = isFocused || value.length > 0;
+
+  // Reset sending state when loading finishes
+  useEffect(() => {
+    if (!isLoading) {
+      setIsSending(false);
+    }
+  }, [isLoading]);
    
    // Auto-resize textarea
    useEffect(() => {
@@ -61,8 +69,8 @@
    const handleKeyPress = (e: React.KeyboardEvent) => {
      if (e.key === 'Enter' && !e.shiftKey) {
        e.preventDefault();
-       if (value.trim()) {
-         onSend();
+      if (value.trim() && !isSending && !isLoading) {
+        handleSendClick();
        }
      }
    };
@@ -81,10 +89,16 @@
     mediumTap();
     if (isLoading && isStoppable) {
       onStop();
-    } else if (value.trim()) {
+    setIsSending(false);
+   } else if (value.trim() && !isSending) {
+    // Immediately lock the send button to prevent duplicate sends
+    setIsSending(true);
       onSend();
     }
   };
+
+  const isInputDisabled = disabled || isLoading || isRecording || isSending;
+  const isSendDisabled = (!value.trim() && !isLoading) || (isLoading && !isStoppable) || (isSending && !isStoppable);
 
    return (
      <div className="w-full max-w-3xl mx-auto px-3">
@@ -100,7 +114,7 @@
              onBlur={() => setTimeout(() => setIsFocused(false), 150)}
              onKeyPress={handleKeyPress}
              placeholder="Ask Anything...."
-             disabled={disabled || isLoading || isRecording}
+            disabled={isInputDisabled}
              className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/60 text-base resize-none outline-none min-h-[28px] max-h-[150px] leading-relaxed"
              rows={1}
            />
@@ -121,7 +135,8 @@
                {/* Media/Image button */}
                <button
                  onClick={() => handleFileInput('image')}
-                 className="p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all active:scale-95"
+                disabled={isInputDisabled}
+                className="p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                  type="button"
                >
                  <Image className="h-5 w-5" />
@@ -130,7 +145,8 @@
                {/* Camera button */}
                <button
                  onClick={() => handleFileInput('camera')}
-                 className="p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all active:scale-95"
+                disabled={isInputDisabled}
+                className="p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                  type="button"
                >
                  <Camera className="h-5 w-5" />
@@ -139,7 +155,8 @@
                {/* File/Document button */}
                <button
                  onClick={() => handleFileInput('file')}
-                 className="p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all active:scale-95"
+                disabled={isInputDisabled}
+                className="p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                  type="button"
                >
                  <FileText className="h-5 w-5" />
@@ -152,7 +169,7 @@
                      onTranscription(text);
                      onRecordingChange(false);
                    }}
-                   disabled={isLoading}
+                  disabled={isInputDisabled}
                    onRecordingChange={onRecordingChange}
                  />
                </div>
@@ -160,7 +177,8 @@
                {/* Model selector pill */}
                <button
                 onClick={() => handleButtonClick(onModelSelect)}
-                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-all active:scale-95 ml-1"
+                disabled={isInputDisabled}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-all active:scale-95 ml-1 disabled:opacity-50 disabled:pointer-events-none"
                  type="button"
                >
                  <Sparkles className="h-3.5 w-3.5" />
@@ -171,13 +189,13 @@
              {/* Right side - send button */}
              <Button
               onClick={handleSendClick}
-              disabled={(!value.trim() && !isLoading) || (isLoading && !isStoppable)}
+             disabled={isSendDisabled}
                size="icon"
                className={cn(
                  "h-10 w-10 rounded-full transition-all duration-200 shadow-md",
                  isLoading && isStoppable
                    ? "bg-destructive hover:bg-destructive/90"
-                  : isLoading
+                 : isLoading || isSending
                     ? "bg-primary/70 cursor-not-allowed"
                     : value.trim()
                      ? "bg-primary hover:bg-primary/90 scale-100"
@@ -186,7 +204,7 @@
              >
                {isLoading && isStoppable ? (
                 <Square className="h-3.5 w-3.5 text-destructive-foreground fill-current" />
-              ) : isLoading ? (
+             ) : isLoading || isSending ? (
                 <Loader2 className="h-4 w-4 text-primary-foreground animate-spin" />
                ) : (
                  <Send className="h-4 w-4 text-primary-foreground" />
