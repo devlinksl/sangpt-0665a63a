@@ -12,7 +12,7 @@ import { AttachmentModal } from '@/components/AttachmentModal';
  import { ChatInputBar } from '@/components/ChatInputBar';
  import { WaveformAnimation } from '@/components/WaveformAnimation';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+ import { useAlert } from '@/hooks/useAlert';
 import { useNavigate } from 'react-router-dom';
 import { useRipple } from '@/hooks/useRipple';
 import { useTheme } from '@/components/ThemeProvider';
@@ -56,7 +56,7 @@ const STARTER_PROMPTS = [
 
 export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationChange }: ChatInterfaceProps) => {
   const { user } = useAuth();
-  const { toast } = useToast();
+   const { alert } = useAlert();
   const navigate = useNavigate();
   const createRipple = useRipple();
   const { theme, setTheme } = useTheme();
@@ -147,7 +147,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
       onConversationChange?.(id);
     } catch (error) {
       console.error('Error loading conversation:', error);
-      toast({
+       alert({
         title: "Error",
         description: humanizeError(error) ?? "Failed to load conversation",
         variant: "destructive",
@@ -357,7 +357,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
             },
             onError: (error) => {
               console.error('Stream error:', error);
-              toast({
+               alert({
                 title: "Error",
                 description: humanizeError(error) ?? error?.message ?? "Failed to get response",
                 variant: "destructive",
@@ -420,7 +420,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
     } catch (error: any) {
       console.error('Error in sendMessage:', error);
-      toast({
+       alert({
         title: "Error",
         description: humanizeError(error) ?? error?.message ?? "Failed to send message",
         variant: "destructive",
@@ -703,7 +703,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                 const files = Array.from((e.target as HTMLInputElement).files || []);
                 if (files.length > 0) {
                   setAttachedFiles(prev => [...prev, ...files]);
-                  toast({ title: "Files attached", description: `${files.length} file(s) ready to send` });
+                   alert({ title: "Files Attached", description: `${files.length} file(s) ready to send`, variant: "success" });
                 }
               };
               input.click();
@@ -716,7 +716,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                 const files = Array.from((e.target as HTMLInputElement).files || []);
                 if (files.length > 0) {
                   setAttachedFiles(prev => [...prev, ...files]);
-                  toast({ title: "Files attached", description: `${files.length} file(s) ready to send` });
+                   alert({ title: "Files Attached", description: `${files.length} file(s) ready to send`, variant: "success" });
                 }
               };
               input.click();
@@ -742,7 +742,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           const m = messages.find(msg => msg.id === selectedMessageId); 
           if(m) {
             navigator.clipboard.writeText(m.content);
-            toast({ title: "Copied", description: "Message copied to clipboard" });
+             alert({ title: "Copied", description: "Message copied to clipboard", variant: "success" });
           }
           setShowLongPress(false);
         }} 
@@ -751,7 +751,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           setShowLongPress(false);
         }}
         onReadAloud={() => {
-          toast({ title: "Read Aloud", description: "Text-to-speech feature coming soon" });
+           alert({ title: "Coming Soon", description: "Text-to-speech feature coming soon" });
           setShowLongPress(false);
         }} 
         onRegenerate={() => {
@@ -769,7 +769,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         onClose={() => setShowAttachment(false)} 
         onFileSelect={(files) => {
           setAttachedFiles(prev => [...prev, ...files]);
-          toast({ title: "Files attached", description: `${files.length} file(s) ready to send` });
+           alert({ title: "Files Attached", description: `${files.length} file(s) ready to send`, variant: "success" });
         }} 
       />
     </div>

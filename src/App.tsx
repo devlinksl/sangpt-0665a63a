@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
+ import { AlertProvider } from "@/hooks/useAlert";
 import Index from "./pages/Index";
 import Settings from "./pages/Settings";
 import Explore from "./pages/Explore";
@@ -40,43 +41,45 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultTheme="system">
       <AuthProvider>
-        <TooltipProvider>
-          <ConnectivityBanner />
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/explore" element={<Explore />} />
-              <Route path="/help" element={<Help />} />
-              <Route path="/account" element={<Account />} />
-              <Route path="/text-selection" element={<TextSelection />} />
-              <Route path="/image-generation" element={<ImageGeneration />} />
-              <Route path="/deep-research" element={<DeepResearch />} />
-              <Route path="/create-podcast" element={<CreatePodcast />} />
-              <Route path="/interactive-quiz" element={<InteractiveQuiz />} />
-              <Route path="/summarize-text" element={<SummarizeText />} />
-              <Route path="/code-helper" element={<CodeHelper />} />
-              <Route path="/creative-writing" element={<CreativeWriting />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/email-writer" element={<EmailWriter />} />
-              <Route path="/video-script" element={<VideoScript />} />
-              <Route path="/social-media-post" element={<SocialMediaPost />} />
-              <Route path="/language-translator" element={<LanguageTranslator />} />
-              <Route path="/math-solver" element={<MathSolver />} />
-              <Route path="/data-analyzer" element={<DataAnalyzer />} />
-              <Route path="/resume-builder" element={<ResumeBuilder />} />
-              <Route path="/business-plan" element={<BusinessPlan />} />
-              <Route path="/seo-optimizer" element={<SEOOptimizer />} />
-              <Route path="/music-composer" element={<MusicComposer />} />
-              <Route path="/recipe-generator" element={<RecipeGenerator />} />
-              <Route path="/fitness-planner" element={<FitnessPlanner />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+         <AlertProvider>
+           <TooltipProvider>
+             <ConnectivityBanner />
+             <Toaster />
+             <Sonner />
+             <BrowserRouter>
+               <Routes>
+                 <Route path="/" element={<Index />} />
+                 <Route path="/settings" element={<Settings />} />
+                 <Route path="/explore" element={<Explore />} />
+                 <Route path="/help" element={<Help />} />
+                 <Route path="/account" element={<Account />} />
+                 <Route path="/text-selection" element={<TextSelection />} />
+                 <Route path="/image-generation" element={<ImageGeneration />} />
+                 <Route path="/deep-research" element={<DeepResearch />} />
+                 <Route path="/create-podcast" element={<CreatePodcast />} />
+                 <Route path="/interactive-quiz" element={<InteractiveQuiz />} />
+                 <Route path="/summarize-text" element={<SummarizeText />} />
+                 <Route path="/code-helper" element={<CodeHelper />} />
+                 <Route path="/creative-writing" element={<CreativeWriting />} />
+                 <Route path="/contact" element={<Contact />} />
+                 <Route path="/email-writer" element={<EmailWriter />} />
+                 <Route path="/video-script" element={<VideoScript />} />
+                 <Route path="/social-media-post" element={<SocialMediaPost />} />
+                 <Route path="/language-translator" element={<LanguageTranslator />} />
+                 <Route path="/math-solver" element={<MathSolver />} />
+                 <Route path="/data-analyzer" element={<DataAnalyzer />} />
+                 <Route path="/resume-builder" element={<ResumeBuilder />} />
+                 <Route path="/business-plan" element={<BusinessPlan />} />
+                 <Route path="/seo-optimizer" element={<SEOOptimizer />} />
+                 <Route path="/music-composer" element={<MusicComposer />} />
+                 <Route path="/recipe-generator" element={<RecipeGenerator />} />
+                 <Route path="/fitness-planner" element={<FitnessPlanner />} />
+                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                 <Route path="*" element={<NotFound />} />
+               </Routes>
+             </BrowserRouter>
+           </TooltipProvider>
+         </AlertProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
