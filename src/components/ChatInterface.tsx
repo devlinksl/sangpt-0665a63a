@@ -625,8 +625,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
               </div>
             ))}
             
-            {/* Loading indicator - only show when loading AND no streaming message yet */}
-            {isLoading && !streamingMessageId && (
+            {isLoading && isStoppable && (
               <div className="flex items-start gap-3 animate-fade-in">
                 <Avatar className="h-7 w-7 bg-primary animate-pulse mt-1">
                   <AvatarFallback className="bg-primary text-primary-foreground text-sm font-bold">S</AvatarFallback>
