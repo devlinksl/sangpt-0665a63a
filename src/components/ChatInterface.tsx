@@ -1,16 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/components/AuthContext';
 import { AuthModal } from '@/components/AuthModal';
 import { MessageActions } from '@/components/MessageActions';
- import { StreamingMarkdown } from '@/components/StreamingMarkdown';
-import { ShimmerLoading } from '@/components/ShimmerLoading';
+import { StreamingMarkdown } from '@/components/StreamingMarkdown';
+import { TypingIndicator } from '@/components/TypingIndicator';
 import { ModelSelectorModal } from '@/components/ModelSelectorModal';
 import { LongPressModal } from '@/components/LongPressModal';
 import { AttachmentModal } from '@/components/AttachmentModal';
- import { ChatInputBar } from '@/components/ChatInputBar';
- import { WaveformAnimation } from '@/components/WaveformAnimation';
+import { ChatInputBar } from '@/components/ChatInputBar';
+import { WaveformAnimation } from '@/components/WaveformAnimation';
 import { supabase } from '@/integrations/supabase/client';
  import { useAlert } from '@/hooks/useAlert';
 import { useNavigate } from 'react-router-dom';
@@ -240,7 +240,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     setStreamingMessageId(null);
   };
 
-  const sendMessage = async (messageText: string, isRegeneration = false) => {
+  const sendMessage = useCallback(async (messageText: string, isRegeneration = false) => {
     if (!messageText.trim() && !isRegeneration && attachedFiles.length === 0) return;
 
     if (!user) {
@@ -254,10 +254,27 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     const fileContext = await processAttachedFiles();
     const fullMessage = messageText + fileContext;
     
-    setIsStoppable(true);
     setAttachedFiles([]);
 
+    // Instantly show user message + clear input BEFORE any async work
+    let userMessage: Message | null = null;
+    if (!isRegeneration) {
+      userMessage = {
+        id: `temp-user-${Date.now()}`,
+        role: 'user',
+        content: fullMessage,
+        created_at: new Date().toISOString(),
+        rating: 0,
+        metadata: attachedFiles.length > 0 ? { files: attachedFiles.map(f => ({ name: f.name, size: f.size, type: f.type })) } : undefined
+      };
+      setMessages(prev => [...prev, userMessage!]);
+      setInput('');
+    }
+
+    setIsStoppable(true);
+
     try {
+      // Create conversation in background — don't block UI
       let conversationId = currentConversationId;
       if (!conversationId) {
         conversationId = await createNewConversation(messageText);
@@ -265,28 +282,16 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         setCurrentConversationId(conversationId);
       }
 
-      let userMessage: Message | null = null;
-
-      if (!isRegeneration) {
-        userMessage = {
-          id: `temp-user-${Date.now()}`,
-          role: 'user',
-          content: fullMessage,
-          created_at: new Date().toISOString(),
-          rating: 0,
-          metadata: attachedFiles.length > 0 ? { files: attachedFiles.map(f => ({ name: f.name, size: f.size, type: f.type })) } : undefined
-        };
-        setMessages(prev => [...prev, userMessage]);
-        setInput('');
-
-        const { error: insertUserError } = await supabase.from('messages').insert([{
+      // Save user message to DB (non-blocking for UI)
+      if (!isRegeneration && userMessage) {
+        supabase.from('messages').insert([{
           conversation_id: conversationId,
           role: 'user',
           content: fullMessage,
           metadata: userMessage.metadata
-        }]);
-
-        if (insertUserError) throw insertUserError;
+        }]).then(({ error }) => {
+          if (error) console.error('Error saving user message:', error);
+        });
       }
 
       let aiResponse: string;
@@ -435,7 +440,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
       setIsStoppable(false);
       setStreamingMessageId(null);
     }
-  };
+  }, [user, currentConversationId, messages, attachedFiles, selectedModel, streamChat]);
 
   const handleRegenerate = () => {
     const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
@@ -524,7 +529,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         </div>
       </header>
 
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto relative">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto relative overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full px-4 text-center">
             <div className="max-w-3xl mx-auto space-y-8 py-20">
@@ -558,9 +563,9 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
             </div>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+            <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
             {messages.map((message, idx) => (
-              <div key={message.id} className="animate-fade-in">
+              <div key={message.id} className="message-enter">
                 {message.role === 'user' ? (
                   <div className="flex items-start gap-3 justify-end">
                     <div className="bg-primary text-primary-foreground px-4 py-3 rounded-2xl max-w-[80%] shadow-sm">
@@ -628,16 +633,9 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
               </div>
             ))}
             
-            {/* Loading indicator - only show when loading AND no streaming message yet */}
+            {/* Typing indicator - subtle dots when AI is thinking */}
             {isLoading && !streamingMessageId && (
-              <div className="flex items-start gap-3 animate-fade-in">
-                <Avatar className="h-7 w-7 bg-primary animate-pulse mt-1">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-sm font-bold">S</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 py-2">
-                  <ShimmerLoading />
-                </div>
-              </div>
+              <TypingIndicator />
             )}
             <div ref={messagesEndRef} />
           </div>
@@ -725,7 +723,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           onModelSelect={() => setShowModelSelector(true)}
           onRecordingChange={setIsRecording}
           onTranscription={(text) => setInput(text)}
-          isLoading={isLoading || isStreaming}
+          isLoading={isLoading}
           isRecording={isRecording}
           isStoppable={isStoppable}
           onStop={stopGeneration}

@@ -189,10 +189,10 @@
            {processedContent}
          </ReactMarkdown>
          
-         {/* Streaming cursor */}
-         {isStreaming && (
-           <span className="inline-block w-2 h-5 bg-foreground/80 animate-pulse ml-0.5 align-middle rounded-sm" />
-         )}
+          {/* Streaming cursor - smooth blinking */}
+          {isStreaming && (
+            <span className="inline-block w-[3px] h-5 bg-primary/80 ml-0.5 align-middle rounded-full typing-cursor" />
+          )}
        </div>
  
        <LinkConfirmModal 

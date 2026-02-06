@@ -229,18 +229,74 @@ body, html {
    margin-bottom: 0;
  }
 
+ /* Typing indicator dots */
+ .typing-dot {
+   display: inline-block;
+   width: 8px;
+   height: 8px;
+   border-radius: 50%;
+   background-color: hsl(var(--muted-foreground));
+   animation: typing-bounce 1.2s ease-in-out infinite;
+   will-change: transform, opacity;
+ }
+
+ @keyframes typing-bounce {
+   0%, 60%, 100% {
+     transform: translateY(0);
+     opacity: 0.4;
+   }
+   30% {
+     transform: translateY(-6px);
+     opacity: 1;
+   }
+ }
+
+ /* GPU-accelerated smooth animations */
+ .gpu-accelerated {
+   transform: translateZ(0);
+   will-change: transform;
+   backface-visibility: hidden;
+ }
+
+ /* Native-feel touch targets */
+ .touch-target {
+   -webkit-tap-highlight-color: transparent;
+   touch-action: manipulation;
+ }
+
+ /* Smooth message entry */
+ @keyframes message-slide-in {
+   from {
+     opacity: 0;
+     transform: translateY(12px) translateZ(0);
+   }
+   to {
+     opacity: 1;
+     transform: translateY(0) translateZ(0);
+   }
+ }
+
+ .message-enter {
+   animation: message-slide-in 0.25s cubic-bezier(0.2, 0, 0, 1) forwards;
+   will-change: transform, opacity;
+ }
+
 @layer base {
   * {
     @apply border-border;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply bg-background text-foreground font-sen;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
-  /* Smooth animations */
+  /* Minimal transition — only colors, not transforms (prevents jank) */
   * {
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   }
 
   /* Custom scrollbar */
