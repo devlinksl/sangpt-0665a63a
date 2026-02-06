@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
- import { useAlert } from '@/hooks/useAlert';
+import { useAlert } from '@/hooks/useAlert';
 import { supabase } from '@/integrations/supabase/client';
 import { TextToSpeech } from '@/components/TextToSpeech';
 import { 
@@ -8,7 +8,8 @@ import {
   ThumbsDown, 
   RotateCcw, 
   Copy,
-  Check
+  Check,
+  Share2
 } from 'lucide-react';
 
 interface MessageActionsProps {
@@ -30,7 +31,7 @@ export const MessageActions = ({
 }: MessageActionsProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-   const { alert } = useAlert();
+  const { alert } = useAlert();
 
   const handleRating = async (newRating: number) => {
     try {
@@ -45,15 +46,15 @@ export const MessageActions = ({
 
       onRatingChange?.(newRating);
       
-       alert({
+      alert({
         title: newRating === 1 ? "Liked" : "Disliked",
         description: "Thank you for your feedback!",
-         variant: "success",
+        variant: "success",
       });
 
     } catch (error) {
       console.error('Error updating rating:', error);
-       alert({
+      alert({
         title: "Error",
         description: "Could not save your feedback",
         variant: "destructive",
@@ -69,17 +70,27 @@ export const MessageActions = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       
-       alert({
+      alert({
         title: "Copied",
         description: "Message copied to clipboard",
-         variant: "success",
+        variant: "success",
       });
     } catch (error) {
-       alert({
+      alert({
         title: "Copy failed",
         description: "Could not copy to clipboard",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: content });
+      } catch (error) {
+        console.log('Share cancelled');
+      }
     }
   };
 
@@ -91,15 +102,15 @@ export const MessageActions = ({
   if (role !== 'assistant') return null;
 
   return (
-    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div className="flex items-center gap-0.5 pt-1">
       <Button
         variant="ghost"
         size="icon"
         onClick={() => handleRating(rating === 1 ? 0 : 1)}
         disabled={isLoading}
-        className={`h-8 w-8 ${rating === 1 ? 'text-green-600 bg-green-50' : ''}`}
+        className={`h-8 w-8 rounded-lg ${rating === 1 ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}
       >
-        <ThumbsUp className="h-4 w-4" />
+        <ThumbsUp className="h-3.5 w-3.5" />
       </Button>
       
       <Button
@@ -107,9 +118,18 @@ export const MessageActions = ({
         size="icon"
         onClick={() => handleRating(rating === -1 ? 0 : -1)}
         disabled={isLoading}
-        className={`h-8 w-8 ${rating === -1 ? 'text-red-600 bg-red-50' : ''}`}
+        className={`h-8 w-8 rounded-lg ${rating === -1 ? 'text-destructive bg-destructive/10' : 'text-muted-foreground'}`}
       >
-        <ThumbsDown className="h-4 w-4" />
+        <ThumbsDown className="h-3.5 w-3.5" />
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleCopy}
+        className="h-8 w-8 rounded-lg text-muted-foreground"
+      >
+        {copied ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
       </Button>
 
       <Button
@@ -117,21 +137,23 @@ export const MessageActions = ({
         size="icon"
         onClick={handleRegenerate}
         disabled={isLoading}
-        className="h-8 w-8"
+        className="h-8 w-8 rounded-lg text-muted-foreground"
       >
-        <RotateCcw className="h-4 w-4" />
+        <RotateCcw className="h-3.5 w-3.5" />
       </Button>
 
       <TextToSpeech text={content} disabled={isLoading} />
 
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={handleCopy}
-        className="h-8 w-8"
-      >
-        {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-      </Button>
+      {navigator.share && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleShare}
+          className="h-8 w-8 rounded-lg text-muted-foreground"
+        >
+          <Share2 className="h-3.5 w-3.5" />
+        </Button>
+      )}
     </div>
   );
 };

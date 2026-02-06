@@ -1,7 +1,10 @@
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerContent,
+} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Camera, Image, FileText, ImageIcon, Globe, Mic, Gamepad2 } from 'lucide-react';
- import { useAlert } from '@/hooks/useAlert';
+import { useAlert } from '@/hooks/useAlert';
 
 interface AttachmentModalProps {
   isOpen: boolean;
@@ -10,7 +13,7 @@ interface AttachmentModalProps {
 }
 
 export const AttachmentModal = ({ isOpen, onClose, onFileSelect }: AttachmentModalProps) => {
-   const { alert } = useAlert();
+  const { alert } = useAlert();
 
   const handleFileInput = (accept: string) => {
     const input = document.createElement('input');
@@ -28,19 +31,17 @@ export const AttachmentModal = ({ isOpen, onClose, onFileSelect }: AttachmentMod
   };
 
   const handleFeature = (feature: string) => {
-     alert({
-       title: "Coming Soon",
+    alert({
+      title: "Coming Soon",
       description: "This feature will be available in a future update.",
     });
     onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bottom-0 top-auto translate-y-0 slide-in-from-bottom animate-slide-in-bottom rounded-t-3xl rounded-b-none border-0 p-0">
-        <div className="px-6 pt-6 pb-2">
-          <div className="w-12 h-1 bg-border mx-auto rounded-full mb-6" />
-        </div>
+    <Drawer open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DrawerContent className="max-h-[85vh]">
+        <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-4 mt-2" />
         
         <div className="px-6 pb-6 space-y-4">
           {/* File Upload Options */}
@@ -125,7 +126,7 @@ export const AttachmentModal = ({ isOpen, onClose, onFileSelect }: AttachmentMod
             </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   );
 };
