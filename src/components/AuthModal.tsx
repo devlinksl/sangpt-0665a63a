@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useAlert } from '@/hooks/useAlert';
-import { X } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { humanizeError } from '@/lib/humanizeError';
 
 interface AuthModalProps {
@@ -128,13 +128,7 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         <ScrollArea className="max-h-[75vh] overflow-y-auto">
           {view === 'main' ? (
             <div className="px-6 pb-8 space-y-6">
-              <div className="flex justify-end">
-                <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
-              
-              <div className="text-center space-y-2">
+              <div className="text-center space-y-2 pt-2">
                 <h2 className="text-2xl font-semibold">Create an account for more</h2>
                 <p className="text-muted-foreground">
                   Log in or sign up to access chat history, create images, and more.
@@ -177,7 +171,7 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
             <div className="px-6 pb-8">
               <div className="flex items-center mb-6">
                 <Button variant="ghost" size="icon" onClick={() => setView('main')} className="rounded-full">
-                  <X className="h-5 w-5" />
+                  <ChevronLeft className="h-5 w-5" />
                 </Button>
                 <h2 className="text-xl font-semibold flex-1 text-center mr-10">Sign in</h2>
               </div>
@@ -232,7 +226,7 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
             <div className="px-6 pb-8">
               <div className="flex items-center mb-6">
                 <Button variant="ghost" size="icon" onClick={() => setView('main')} className="rounded-full">
-                  <X className="h-5 w-5" />
+                  <ChevronLeft className="h-5 w-5" />
                 </Button>
                 <h2 className="text-xl font-semibold flex-1 text-center mr-10">Sign up</h2>
               </div>
