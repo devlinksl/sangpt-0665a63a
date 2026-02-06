@@ -565,14 +565,16 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                          content={message.content} 
                          isStreaming={streamingMessageId === message.id}
                        />
-                       <MessageActions 
-                         messageId={message.id} 
-                         content={message.content} 
-                         role={message.role} 
-                         rating={message.rating} 
-                         onRegenerate={handleRegenerate} 
-                         onRatingChange={(r) => setMessages(p => p.map(m => m.id === message.id ? {...m, rating: r} : m))} 
-                       />
+                       {streamingMessageId !== message.id && (
+                         <MessageActions 
+                           messageId={message.id} 
+                           content={message.content} 
+                           role={message.role} 
+                           rating={message.rating} 
+                           onRegenerate={handleRegenerate} 
+                           onRatingChange={(r) => setMessages(p => p.map(m => m.id === message.id ? {...m, rating: r} : m))} 
+                         />
+                       )}
                     </div>
                   </div>
                 )}
