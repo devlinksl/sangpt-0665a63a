@@ -7,7 +7,6 @@ import { MessageActions } from '@/components/MessageActions';
 import { StreamingMarkdown } from '@/components/StreamingMarkdown';
 import { TypingIndicator } from '@/components/TypingIndicator';
 import { ModelSelectorModal } from '@/components/ModelSelectorModal';
-import { LongPressModal } from '@/components/LongPressModal';
 import { AttachmentModal } from '@/components/AttachmentModal';
 import { ChatInputBar } from '@/components/ChatInputBar';
 import { WaveformAnimation } from '@/components/WaveformAnimation';
@@ -66,9 +65,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const [isLoading, setIsLoading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showModelSelector, setShowModelSelector] = useState(false);
-  const [showLongPress, setShowLongPress] = useState(false);
   const [showAttachment, setShowAttachment] = useState(false);
-  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   // Default to the more reliable built-in model
   const [selectedModel, setSelectedModel] = useState('lovable');
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
@@ -447,33 +444,8 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     if (lastUserMessage) sendMessage(lastUserMessage.content, true);
   };
 
-  const handleLongPress = (messageId: string) => {
-    setSelectedMessageId(messageId);
-    setShowLongPress(true);
-  };
 
-  const handleSelectText = () => {
-    const message = messages.find(m => m.id === selectedMessageId);
-    if (message) {
-      navigate('/text-selection', { 
-        state: { 
-          content: message.content, 
-          conversationId: currentConversationId 
-        } 
-      });
-    }
-  };
 
-  const handleShare = async () => {
-    const message = messages.find(m => m.id === selectedMessageId);
-    if (message && navigator.share) {
-      try {
-        await navigator.share({ text: message.content });
-      } catch (error) {
-        console.log('Share cancelled');
-      }
-    }
-  };
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -588,33 +560,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                     <Avatar className="h-7 w-7 bg-primary flex-shrink-0 mt-1">
                       <AvatarFallback className="bg-primary text-primary-foreground text-sm font-bold">S</AvatarFallback>
                     </Avatar>
-                    <div 
-                      className="flex-1 space-y-3"
-                      onContextMenu={(e) => { e.preventDefault(); handleLongPress(message.id); }}
-                      onTouchStart={(e) => {
-                        const startY = e.touches[0].clientY;
-                        const timer = setTimeout(() => {
-                          const endY = e.touches[0]?.clientY;
-                          if (Math.abs(endY - startY) < 10) {
-                            handleLongPress(message.id);
-                          }
-                        }, 1900);
-                        e.currentTarget.dataset.timer = String(timer);
-                        e.currentTarget.dataset.startY = String(startY);
-                      }}
-                      onTouchMove={(e) => {
-                        const timer = e.currentTarget.dataset.timer;
-                        const startY = Number(e.currentTarget.dataset.startY);
-                        const currentY = e.touches[0].clientY;
-                        if (timer && Math.abs(currentY - startY) > 10) {
-                          clearTimeout(Number(timer));
-                        }
-                      }}
-                      onTouchEnd={(e) => {
-                        const timer = e.currentTarget.dataset.timer;
-                        if (timer) clearTimeout(Number(timer));
-                      }}
-                     >
+                    <div className="flex-1 space-y-2">
                        <StreamingMarkdown 
                          content={message.content} 
                          isStreaming={streamingMessageId === message.id}
@@ -733,35 +679,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       <ModelSelectorModal isOpen={showModelSelector} onClose={() => setShowModelSelector(false)} selectedModel={selectedModel} onSelectModel={setSelectedModel} />
-      <LongPressModal 
-        isOpen={showLongPress} 
-        onClose={() => setShowLongPress(false)} 
-        onCopy={() => { 
-          const m = messages.find(msg => msg.id === selectedMessageId); 
-          if(m) {
-            navigator.clipboard.writeText(m.content);
-             alert({ title: "Copied", description: "Message copied to clipboard", variant: "success" });
-          }
-          setShowLongPress(false);
-        }} 
-        onSelectText={() => {
-          handleSelectText();
-          setShowLongPress(false);
-        }}
-        onReadAloud={() => {
-           alert({ title: "Coming Soon", description: "Text-to-speech feature coming soon" });
-          setShowLongPress(false);
-        }} 
-        onRegenerate={() => {
-          handleRegenerate();
-          setShowLongPress(false);
-        }}
-        onShare={() => {
-          handleShare();
-          setShowLongPress(false);
-        }}
-        conversationId={currentConversationId}
-      />
+      
       <AttachmentModal 
         isOpen={showAttachment} 
         onClose={() => setShowAttachment(false)} 

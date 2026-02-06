@@ -1,5 +1,9 @@
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { Brain, Sparkles } from 'lucide-react';
 
 interface ModelSelectorModalProps {
@@ -35,21 +39,13 @@ export const ModelSelectorModal = ({
   onSelectModel 
 }: ModelSelectorModalProps) => {
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
-      <DialogContent className="sm:max-w-md bottom-0 top-auto translate-y-0 slide-in-from-bottom animate-slide-in-bottom rounded-t-3xl rounded-b-none border-0 p-0">
-        {/* Accessibility (prevents Radix warnings) */}
-        <DialogTitle className="sr-only">Select model</DialogTitle>
-        <DialogDescription className="sr-only">
+    <Drawer open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DrawerContent className="max-h-[85vh]">
+        <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-4 mt-2" />
+        <DrawerTitle className="sr-only">Select model</DrawerTitle>
+        <DrawerDescription className="sr-only">
           Choose which AI model to use for responses.
-        </DialogDescription>
-        <div className="px-6 pt-6 pb-2">
-          <div className="w-12 h-1 bg-border mx-auto rounded-full mb-6" />
-        </div>
+        </DrawerDescription>
         
         <div className="px-6 pb-6 space-y-3">
           {models.map((model) => {
@@ -99,7 +95,7 @@ export const ModelSelectorModal = ({
             );
           })}
         </div>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   );
 };

@@ -1,4 +1,7 @@
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerContent,
+} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Edit2, Pin, PinOff, Trash2 } from 'lucide-react';
 
@@ -25,10 +28,10 @@ export const ConversationLongPressModal = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bottom-0 top-auto translate-y-0 slide-in-from-bottom animate-slide-in-bottom rounded-t-3xl rounded-b-none border-0 p-0">
-        <div className="px-6 pt-6 pb-2">
-          <div className="w-12 h-1 bg-border mx-auto rounded-full mb-4" />
+    <Drawer open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DrawerContent className="max-h-[85vh]">
+        <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-4 mt-2" />
+        <div className="px-6 pb-2">
           <h3 className="text-center font-semibold text-lg mb-2">Conversation Actions</h3>
         </div>
         
@@ -69,7 +72,7 @@ export const ConversationLongPressModal = ({
             Delete
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   );
 };

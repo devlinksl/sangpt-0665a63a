@@ -1,11 +1,20 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
- import { useAlert } from '@/hooks/useAlert';
-import { X, Chrome } from 'lucide-react';
+import { useAlert } from '@/hooks/useAlert';
+import { X } from 'lucide-react';
 import { humanizeError } from '@/lib/humanizeError';
 
 interface AuthModalProps {
@@ -19,7 +28,7 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-   const { alert } = useAlert();
+  const { alert } = useAlert();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,14 +42,14 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
 
       if (error) throw error;
 
-       alert({
+      alert({
         title: "Welcome back!",
         description: "You're now signed in",
-         variant: "success",
+        variant: "success",
       });
       onClose();
     } catch (error: any) {
-       alert({
+      alert({
         title: "Sign in failed",
         description: humanizeError(error) ?? error?.message ?? "Sign in failed",
         variant: "destructive",
@@ -68,14 +77,14 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
 
       if (error) throw error;
 
-       alert({
+      alert({
         title: "Account created!",
         description: "You can now start using the app",
-         variant: "success",
+        variant: "success",
       });
       onClose();
     } catch (error: any) {
-       alert({
+      alert({
         title: "Sign up failed",
         description: humanizeError(error) ?? error?.message ?? "Sign up failed",
         variant: "destructive",
@@ -97,7 +106,7 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
 
       if (error) throw error;
     } catch (error: any) {
-       alert({
+      alert({
         title: "Google Sign In Error",
         description: humanizeError(error) ?? error?.message ?? "Google sign-in failed",
         variant: "destructive",
@@ -106,29 +115,25 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
   };
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
-      <DialogContent className="sm:max-w-md bottom-0 top-auto translate-y-0 slide-in-from-bottom animate-slide-in-bottom rounded-t-3xl rounded-b-none border-0 p-0">
-        {/* Accessibility (prevents Radix warnings) */}
-        <DialogTitle className="sr-only">
+    <Drawer open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DrawerContent className="max-h-[90vh]">
+        <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-2 mt-2" />
+        <DrawerTitle className="sr-only">
           {view === 'main' ? 'Authentication' : view === 'signin' ? 'Sign in' : 'Sign up'}
-        </DialogTitle>
-        <DialogDescription className="sr-only">
+        </DrawerTitle>
+        <DrawerDescription className="sr-only">
           Sign in or create an account to continue.
-        </DialogDescription>
-        {view === 'main' ? (
-          <>
-            <div className="px-6 pt-6 pb-2 flex justify-end">
-              <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-            
+        </DrawerDescription>
+
+        <ScrollArea className="max-h-[75vh] overflow-y-auto">
+          {view === 'main' ? (
             <div className="px-6 pb-8 space-y-6">
+              <div className="flex justify-end">
+                <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              
               <div className="text-center space-y-2">
                 <h2 className="text-2xl font-semibold">Create an account for more</h2>
                 <p className="text-muted-foreground">
@@ -139,7 +144,7 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
               <div className="space-y-3">
                 <Button 
                   onClick={handleGoogleSignIn}
-                  className="w-full h-14 bg-gray-900 hover:bg-gray-800 text-white rounded-full text-base"
+                  className="w-full h-14 bg-foreground hover:bg-foreground/90 text-background rounded-full text-base"
                   disabled={isLoading}
                 >
                   <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -168,132 +173,132 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                 </Button>
               </div>
             </div>
-          </>
-        ) : view === 'signin' ? (
-          <>
-            <div className="px-6 pt-6 pb-2 flex items-center">
-              <Button variant="ghost" size="icon" onClick={() => setView('main')} className="rounded-full">
-                <X className="h-5 w-5" />
-              </Button>
-              <h2 className="text-xl font-semibold flex-1 text-center mr-10">Sign in</h2>
-            </div>
-            
-            <form onSubmit={handleSignIn} className="px-6 pb-8 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="signin-email">Email</Label>
-                <Input
-                  id="signin-email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-12 rounded-xl"
-                />
+          ) : view === 'signin' ? (
+            <div className="px-6 pb-8">
+              <div className="flex items-center mb-6">
+                <Button variant="ghost" size="icon" onClick={() => setView('main')} className="rounded-full">
+                  <X className="h-5 w-5" />
+                </Button>
+                <h2 className="text-xl font-semibold flex-1 text-center mr-10">Sign in</h2>
               </div>
+              
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signin-email">Email</Label>
+                  <Input
+                    id="signin-email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-12 rounded-xl"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="signin-password">Password</Label>
-                <Input
-                  id="signin-password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="h-12 rounded-xl"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signin-password">Password</Label>
+                  <Input
+                    id="signin-password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="h-12 rounded-xl"
+                  />
+                </div>
 
-              <Button 
-                type="submit" 
-                className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-white rounded-full text-base"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Signing in...' : 'Sign in'}
-              </Button>
-
-              <div className="text-center">
-                <button 
-                  type="button"
-                  onClick={() => setView('signup')}
-                  className="text-sm text-muted-foreground hover:text-foreground"
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 bg-foreground hover:bg-foreground/90 text-background rounded-full text-base"
+                  disabled={isLoading}
                 >
-                  Don't have an account? Sign up
-                </button>
-              </div>
-            </form>
-          </>
-        ) : (
-          <>
-            <div className="px-6 pt-6 pb-2 flex items-center">
-              <Button variant="ghost" size="icon" onClick={() => setView('main')} className="rounded-full">
-                <X className="h-5 w-5" />
-              </Button>
-              <h2 className="text-xl font-semibold flex-1 text-center mr-10">Sign up</h2>
+                  {isLoading ? 'Signing in...' : 'Sign in'}
+                </Button>
+
+                <div className="text-center">
+                  <button 
+                    type="button"
+                    onClick={() => setView('signup')}
+                    className="text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    Don't have an account? Sign up
+                  </button>
+                </div>
+              </form>
             </div>
-            
-            <form onSubmit={handleSignUp} className="px-6 pb-8 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="signup-name">Name</Label>
-                <Input
-                  id="signup-name"
-                  type="text"
-                  placeholder="Enter your name"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  required
-                  className="h-12 rounded-xl"
-                />
+          ) : (
+            <div className="px-6 pb-8">
+              <div className="flex items-center mb-6">
+                <Button variant="ghost" size="icon" onClick={() => setView('main')} className="rounded-full">
+                  <X className="h-5 w-5" />
+                </Button>
+                <h2 className="text-xl font-semibold flex-1 text-center mr-10">Sign up</h2>
               </div>
+              
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-name">Name</Label>
+                  <Input
+                    id="signup-name"
+                    type="text"
+                    placeholder="Enter your name"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    required
+                    className="h-12 rounded-xl"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
-                <Input
-                  id="signup-email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-12 rounded-xl"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-12 rounded-xl"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
-                <Input
-                  id="signup-password"
-                  type="password"
-                  placeholder="Create a password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="h-12 rounded-xl"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Password</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    placeholder="Create a password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="h-12 rounded-xl"
+                  />
+                </div>
 
-              <Button 
-                type="submit" 
-                className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-white rounded-full text-base"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Creating account...' : 'Create account'}
-              </Button>
-
-              <div className="text-center">
-                <button 
-                  type="button"
-                  onClick={() => setView('signin')}
-                  className="text-sm text-muted-foreground hover:text-foreground"
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 bg-foreground hover:bg-foreground/90 text-background rounded-full text-base"
+                  disabled={isLoading}
                 >
-                  Already have an account? Sign in
-                </button>
-              </div>
-            </form>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+                  {isLoading ? 'Creating account...' : 'Create account'}
+                </Button>
+
+                <div className="text-center">
+                  <button 
+                    type="button"
+                    onClick={() => setView('signin')}
+                    className="text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    Already have an account? Sign in
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </ScrollArea>
+      </DrawerContent>
+    </Drawer>
   );
 };
