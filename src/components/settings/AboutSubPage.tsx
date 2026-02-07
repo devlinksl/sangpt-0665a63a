@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { SettingsSubPage } from './SettingsSubPage';
 
 interface AboutSubPageProps {
@@ -5,6 +6,8 @@ interface AboutSubPageProps {
 }
 
 export function AboutSubPage({ onBack }: AboutSubPageProps) {
+  const navigate = useNavigate();
+
   return (
     <SettingsSubPage title="About SanGPT" onBack={onBack}>
       <div className="flex flex-col items-center gap-3 py-6">
@@ -27,6 +30,9 @@ export function AboutSubPage({ onBack }: AboutSubPageProps) {
       </div>
 
       <div className="glass-card rounded-2xl divide-y divide-border/30 mt-4">
+        <button onClick={() => navigate('/license')} className="block w-full text-left p-4 active:bg-accent/60 transition-colors">
+          <p className="text-sm font-medium">Application License</p>
+        </button>
         <a href="#" className="block p-4 active:bg-accent/60">
           <p className="text-sm font-medium">Terms of Service</p>
         </a>
