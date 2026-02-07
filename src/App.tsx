@@ -33,6 +33,7 @@ import SEOOptimizer from "./pages/SEOOptimizer";
 import MusicComposer from "./pages/MusicComposer";
 import RecipeGenerator from "./pages/RecipeGenerator";
 import FitnessPlanner from "./pages/FitnessPlanner";
+import License from "./pages/License";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -73,8 +74,9 @@ const App = () => (
                  <Route path="/seo-optimizer" element={<SEOOptimizer />} />
                  <Route path="/music-composer" element={<MusicComposer />} />
                  <Route path="/recipe-generator" element={<RecipeGenerator />} />
-                 <Route path="/fitness-planner" element={<FitnessPlanner />} />
-                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="/fitness-planner" element={<FitnessPlanner />} />
+                  <Route path="/license" element={<License />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                  <Route path="*" element={<NotFound />} />
                </Routes>
              </BrowserRouter>
