@@ -1,26 +1,79 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Basic -->
     <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SanGPT</title>
-    <meta name="description" content="Modern AI-powered conversational assistant" />
-    <meta name="author" content="Copilot AI" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Sen:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <meta property="og:title" content="Copilot AI" />
-    <meta property="og:description" content="Modern AI-powered conversational assistant" />
+    <!-- Title -->
+    <title>SanGPT — AI Assistant for Conversations, Learning & Productivity</title>
+
+    <!-- Primary Meta -->
+    <meta name="description" content="SanGPT is your intelligent AI assistant for natural conversations, learning, coding, content creation, and productivity. Fast, reliable, and built for modern workflows." />
+    <meta name="author" content="SanGPT Team" />
+    <meta name="application-name" content="SanGPT" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="keywords" content="AI assistant, SanGPT, conversational AI, productivity AI, AI chat, AI learning, AI coding assistant, AI content creation" />
+    <meta name="robots" content="index, follow" />
+    <meta name="googlebot" content="index, follow" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sen:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="SanGPT — AI Assistant for Conversations, Learning & Productivity" />
+    <meta property="og:description" content="SanGPT is an advanced AI assistant designed for natural conversation, problem-solving, coding, content creation, and enhancing your productivity." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:site_name" content="SanGPT" />
+    <meta property="og:url" content="https://sangpt.com/" />
+    <meta property="og:image" content="https://i.imghippo.com/files/SdS4959ifs.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="SanGPT AI Assistant — Conversational, Intelligent, Fast" />
 
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:site" content="@SanGPT_AI" />
+    <meta name="twitter:title" content="SanGPT — AI Assistant for Conversations, Learning & Productivity" />
+    <meta name="twitter:description" content="Talk, learn, and create with SanGPT — your AI assistant for productivity, coding, and smart solutions." />
+    <meta name="twitter:image" content="https://i.imghippo.com/files/SdS4959ifs.jpg" />
+    <meta name="twitter:image:alt" content="SanGPT AI Assistant — Conversational, Intelligent, Fast" />
+
+    <!-- Apple / PWA -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "SanGPT",
+      "url": "https://sangpt.vercel.app",
+      "author": {
+        "@type": "Organization",
+        "name": "SanGPT Team"
+      },
+      "description": "SanGPT is your intelligent AI assistant for natural conversations, learning, coding, content creation, and productivity.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://sangpt.com/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <!-- Performance / Color Scheme -->
+    <meta name="color-scheme" content="dark light" />
   </head>
 
   <body>
+    <noscript>SanGPT requires JavaScript to run. Please enable JavaScript in your browser.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
