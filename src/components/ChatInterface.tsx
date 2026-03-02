@@ -12,25 +12,19 @@ import { AttachmentModal } from '@/components/AttachmentModal';
 import { ChatInputBar } from '@/components/ChatInputBar';
 import { WaveformAnimation } from '@/components/WaveformAnimation';
 import { supabase } from '@/integrations/supabase/client';
- import { useAlert } from '@/hooks/useAlert';
+import { useAlert } from '@/hooks/useAlert';
 import { useNavigate } from 'react-router-dom';
 import { useRipple } from '@/hooks/useRipple';
 import { useTheme } from '@/components/ThemeProvider';
 import { humanizeError } from '@/lib/humanizeError';
- import { useStreamChat } from '@/hooks/useStreamChat';
- import { 
-   Menu, 
-   Edit3, 
-   Paperclip,
-   Compass,
-   Sparkles,
-   Lightbulb,
-   Code,
-   Wand2,
-   Moon,
-   Sun,
-   ArrowDown
- } from 'lucide-react';
+import { useStreamChat } from '@/hooks/useStreamChat';
+import { getCachedMessages, cacheMessages } from '@/lib/chatCache';
+import {
+  Menu,
+  Edit3,
+  Paperclip,
+  ArrowDown
+} from 'lucide-react';
 
 interface Message {
   id: string;
@@ -47,25 +41,9 @@ interface ChatInterfaceProps {
   onConversationChange?: (id: string | null) => void;
 }
 
-const STARTER_PROMPTS = [
-  { icon: Lightbulb, text: "Explain quantum computing like I'm 5", category: "Learn" },
-  { icon: Code, text: "Write a Python script to analyze CSV data", category: "Code" },
-  { icon: Wand2, text: "Help me brainstorm creative project ideas", category: "Create" },
-  { icon: Sparkles, text: "Suggest ways to improve my productivity", category: "Advice" }
-];
-
-// Handler for conversation selection from HomeScreen
-const useHomeConversationSelect = (
-  loadConversation: (id: string) => void,
-) => {
-  return (id: string) => {
-    loadConversation(id);
-  };
-};
-
 export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationChange }: ChatInterfaceProps) => {
   const { user } = useAuth();
-   const { alert } = useAlert();
+  const { alert } = useAlert();
   const navigate = useNavigate();
   const createRipple = useRipple();
   const { theme, setTheme } = useTheme();
@@ -76,7 +54,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [showAttachment, setShowAttachment] = useState(false);
-  // Default to the more reliable built-in model
   const [selectedModel, setSelectedModel] = useState('lovable');
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
@@ -106,17 +83,13 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
-
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
       const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
       const isAtBottom = distanceFromBottom < 50;
-      
-      // Show button only when user has scrolled away from bottom
       setShowScrollButton(!isAtBottom && scrollHeight > clientHeight);
       userScrolledRef.current = !isAtBottom;
     };
-
     container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
@@ -128,11 +101,25 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     }
   }, [conversationId]);
 
-  const modelLabel = selectedModel === 'lovable' ? 'SanGPT' : 'Experimental';
-
   const loadConversation = async (id: string) => {
     try {
-      setIsLoading(true);
+      // 1. Load from cache instantly
+      const cached = await getCachedMessages(id);
+      if (cached.length > 0) {
+        setMessages(cached.map(msg => ({
+          id: msg.id,
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+          created_at: msg.created_at,
+          rating: msg.rating || 0,
+          metadata: msg.metadata,
+        })));
+        setCurrentConversationId(id);
+        onConversationChange?.(id);
+      }
+
+      // 2. Fetch from server
+      setIsLoading(cached.length === 0);
       const { data, error } = await supabase
         .from('messages')
         .select('*')
@@ -141,20 +128,32 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
       if (error) throw error;
 
-      setMessages(data.map(msg => ({
+      const serverMessages = data.map(msg => ({
         id: msg.id,
         role: msg.role as 'user' | 'assistant',
         content: msg.content,
         created_at: msg.created_at,
         rating: msg.rating || 0,
-        metadata: msg.metadata
-      })));
-      
+        metadata: msg.metadata,
+      }));
+
+      setMessages(serverMessages);
       setCurrentConversationId(id);
       onConversationChange?.(id);
+
+      // Cache for offline
+      cacheMessages(data.map(msg => ({
+        id: msg.id,
+        conversation_id: msg.conversation_id,
+        role: msg.role,
+        content: msg.content,
+        created_at: msg.created_at,
+        rating: msg.rating || 0,
+        metadata: msg.metadata,
+      }))).catch(() => {});
     } catch (error) {
       console.error('Error loading conversation:', error);
-       alert({
+      alert({
         title: "Error",
         description: humanizeError(error) ?? "Failed to load conversation",
         variant: "destructive",
@@ -168,12 +167,11 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     try {
       const functionName = selectedModel === 'gemini' ? 'gemini-chat' : 'ai-chat';
       const modelParam = selectedModel === 'gemini' ? 'gemini-2.0-flash-exp' : 'google/gemini-2.5-flash';
-      
       const { data } = await supabase.functions.invoke(functionName, {
-        body: { 
-          messages: [{ 
-            role: 'user', 
-            content: `Generate a short, creative 3-5 word title for a conversation that starts with: "${firstMessage.substring(0, 100)}". Reply with ONLY the title, no quotes or extra text.` 
+        body: {
+          messages: [{
+            role: 'user',
+            content: `Generate a short, creative 3-5 word title for a conversation that starts with: "${firstMessage.substring(0, 100)}". Reply with ONLY the title, no quotes or extra text.`
           }],
           model: modelParam
         }
@@ -186,7 +184,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
   const createNewConversation = async (firstMessage?: string): Promise<string | null> => {
     if (!user) return null;
-    
     try {
       const title = firstMessage ? await generateConversationTitle(firstMessage) : 'New conversation';
       const { data, error } = await supabase
@@ -194,7 +191,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         .insert([{ user_id: user.id, title }])
         .select()
         .single();
-
       if (error) throw error;
       return data.id;
     } catch (error) {
@@ -204,28 +200,24 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
   };
 
   const handleImageGeneration = async (prompt: string) => {
-  try {
-    const response = await fetch(`https://api.siputzx.my.id/api/ai/flux?prompt=${encodeURIComponent(prompt)}`);
-    const data = await response.json();
-    
-    if (data.status && data.result?.images?.[0]) {
-      return `![Generated Image](${data.result.images[0]})`;
+    try {
+      const response = await fetch(`https://api.siputzx.my.id/api/ai/flux?prompt=${encodeURIComponent(prompt)}`);
+      const data = await response.json();
+      if (data.status && data.result?.images?.[0]) {
+        return `![Generated Image](${data.result.images[0]})`;
+      }
+      return "Sorry, I couldn't generate that image.";
+    } catch (error) {
+      console.error('Image generation error:', error);
+      return "Sorry, image generation failed.";
     }
-    return "Sorry, I couldn't generate that image.";
-  } catch (error) {
-    console.error('Image generation error:', error);
-    return "Sorry, image generation failed.";
-  }
-};
+  };
 
   const processAttachedFiles = async (): Promise<string> => {
     if (attachedFiles.length === 0) return '';
-
     let fileContext = '\n\n[Attached Files]:\n';
-    
     for (const file of attachedFiles) {
       fileContext += `\nFile: ${file.name} (${(file.size / 1024).toFixed(2)} KB, ${file.type})\n`;
-      
       if (file.type.startsWith('text/') || file.type.includes('json')) {
         const text = await file.text();
         fileContext += `Content:\n${text}\n`;
@@ -235,7 +227,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         fileContext += `[Image file - visual analysis would require vision model]\n`;
       }
     }
-    
     return fileContext;
   };
 
@@ -249,21 +240,13 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
   const sendMessage = useCallback(async (messageText: string, isRegeneration = false) => {
     if (!messageText.trim() && !isRegeneration && attachedFiles.length === 0) return;
+    if (!user) { setShowAuthModal(true); return; }
 
-    if (!user) {
-      setShowAuthModal(true);
-      return;
-    }
-
-    // Check for "Imagine" keyword
     const imagineMatch = messageText.match(/^imagine\s+(.+)/i);
-    
     const fileContext = await processAttachedFiles();
     const fullMessage = messageText + fileContext;
-    
     setAttachedFiles([]);
 
-    // Instantly show user message + clear input BEFORE any async work
     let userMessage: Message | null = null;
     if (!isRegeneration) {
       userMessage = {
@@ -272,7 +255,7 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         content: fullMessage,
         created_at: new Date().toISOString(),
         rating: 0,
-        metadata: attachedFiles.length > 0 ? { files: attachedFiles.map(f => ({ name: f.name, size: f.size, type: f.type })) } : undefined
+        metadata: attachedFiles.length > 0 ? { files: attachedFiles.map(f => ({ name: f.name, size: f.size, type: f.type })) } : undefined,
       };
       setMessages(prev => [...prev, userMessage!]);
       setInput('');
@@ -281,7 +264,6 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     setIsStoppable(true);
 
     try {
-      // Create conversation in background — don't block UI
       let conversationId = currentConversationId;
       if (!conversationId) {
         conversationId = await createNewConversation(messageText);
@@ -289,13 +271,12 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         setCurrentConversationId(conversationId);
       }
 
-      // Save user message to DB (non-blocking for UI)
       if (!isRegeneration && userMessage) {
         supabase.from('messages').insert([{
           conversation_id: conversationId,
           role: 'user',
           content: fullMessage,
-          metadata: userMessage.metadata
+          metadata: userMessage.metadata,
         }]).then(({ error }) => {
           if (error) console.error('Error saving user message:', error);
         });
@@ -309,17 +290,16 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         aiResponse = await handleImageGeneration(imagineMatch[1]);
         setIsLoading(false);
       } else {
-        const messagesToSend = isRegeneration 
+        const messagesToSend = isRegeneration
           ? messages
           : [...messages, ...(userMessage ? [userMessage] : [])];
 
         setIsLoading(true);
         setIsTyping(true);
-        
-        // Create a placeholder for the streaming message
+
         const streamMsgId = `ai-streaming-${Date.now()}`;
         setStreamingMessageId(streamMsgId);
-        
+
         const streamingMessage: Message = {
           id: streamMsgId,
           role: 'assistant',
@@ -327,117 +307,89 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
           created_at: new Date().toISOString(),
           rating: 0,
         };
-        
+
         setMessages(prev => {
           if (isRegeneration) {
             const newMessages = [...prev];
             const lastAssistantIndex = newMessages.map(m => m.role).lastIndexOf('assistant');
-            if (lastAssistantIndex !== -1) {
-              newMessages[lastAssistantIndex] = streamingMessage;
-            } else {
-              newMessages.push(streamingMessage);
-            }
+            if (lastAssistantIndex !== -1) newMessages[lastAssistantIndex] = streamingMessage;
+            else newMessages.push(streamingMessage);
             return newMessages;
           }
           return [...prev, streamingMessage];
         });
 
         const modelParam = selectedModel === 'gemini' ? 'google/gemini-2.5-flash' : 'google/gemini-3-flash-preview';
-        
-        // Use streaming
+
         aiResponse = await streamChat(
           messagesToSend.map(m => ({ role: m.role, content: m.content })),
           conversationId,
           modelParam,
           {
             onToken: (token) => {
-              setMessages(prev => prev.map(m => 
-                m.id === streamMsgId 
-                  ? { ...m, content: m.content + token }
-                  : m
+              setMessages(prev => prev.map(m =>
+                m.id === streamMsgId ? { ...m, content: m.content + token } : m
               ));
             },
             onComplete: (fullResponse) => {
-              // Update the message with final ID
               const finalMsgId = `ai-${Date.now()}`;
-              setMessages(prev => prev.map(m => 
-                m.id === streamMsgId 
-                  ? { ...m, id: finalMsgId, content: fullResponse }
-                  : m
+              setMessages(prev => prev.map(m =>
+                m.id === streamMsgId ? { ...m, id: finalMsgId, content: fullResponse } : m
               ));
               setStreamingMessageId(null);
             },
             onError: (error) => {
               console.error('Stream error:', error);
-               alert({
+              alert({
                 title: "Error",
                 description: humanizeError(error) ?? error?.message ?? "Failed to get response",
                 variant: "destructive",
               });
-              // Remove the streaming message on error
               setMessages(prev => prev.filter(m => m.id !== streamMsgId));
             }
           }
         );
-        
-        if (!aiResponse) {
-          throw new Error('No response from AI');
-        }
-        
+
+        if (!aiResponse) throw new Error('No response from AI');
         setIsTyping(false);
         setIsLoading(false);
       }
 
-      // Only save to DB for non-streaming (image generation) or if we have a response
-      if (imagineMatch && aiResponse) {
-        const assistantMessage: Message = {
-          id: `ai-${Date.now()}`,
-          role: 'assistant',
-          content: aiResponse,
-          created_at: new Date().toISOString(),
-          rating: 0,
-        };
-
-        setMessages(prev => {
-          if (isRegeneration) {
-            const newMessages = [...prev];
-            const lastAssistantIndex = newMessages.map(m => m.role).lastIndexOf('assistant');
-            if (lastAssistantIndex !== -1) {
-              newMessages[lastAssistantIndex] = assistantMessage;
-            } else {
-              newMessages.push(assistantMessage);
+      // Save AI response
+      if (aiResponse) {
+        if (imagineMatch) {
+          const assistantMessage: Message = {
+            id: `ai-${Date.now()}`,
+            role: 'assistant',
+            content: aiResponse,
+            created_at: new Date().toISOString(),
+            rating: 0,
+          };
+          setMessages(prev => {
+            if (isRegeneration) {
+              const newMessages = [...prev];
+              const lastAssistantIndex = newMessages.map(m => m.role).lastIndexOf('assistant');
+              if (lastAssistantIndex !== -1) newMessages[lastAssistantIndex] = assistantMessage;
+              else newMessages.push(assistantMessage);
+              return newMessages;
             }
-            return newMessages;
-          }
-          return [...prev, assistantMessage];
-        });
+            return [...prev, assistantMessage];
+          });
+        }
 
-        const { error: insertAiError } = await supabase.from('messages').insert([{
+        await supabase.from('messages').insert([{
           conversation_id: conversationId,
           role: 'assistant',
           content: aiResponse,
         }]);
-
-        if (insertAiError) throw insertAiError;
-      } else if (aiResponse) {
-        // Save streamed response to DB
-        const { error: insertAiError } = await supabase.from('messages').insert([{
-          conversation_id: conversationId,
-          role: 'assistant',
-          content: aiResponse,
-        }]);
-
-        if (insertAiError) throw insertAiError;
       }
-
     } catch (error: any) {
       console.error('Error in sendMessage:', error);
-       alert({
+      alert({
         title: "Error",
         description: humanizeError(error) ?? error?.message ?? "Failed to send message",
         variant: "destructive",
       });
-      
       if (!isRegeneration) {
         setMessages(prev => prev.filter(m => !m.id.startsWith('temp-')));
       }
@@ -454,63 +406,33 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
     if (lastUserMessage) sendMessage(lastUserMessage.content, true);
   };
 
-
-
+  const chatTitle = currentConversationId ? 'SanGPT' : 'SanGPT';
 
   return (
     <div className="flex flex-col h-screen bg-background">
+      {/* ─── Clean Header ─── */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-background/60 backdrop-blur-2xl backdrop-saturate-150 sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={onOpenSidebar} className="hover:bg-accent">
-            <Menu className="h-5 w-5" />
-          </Button>
-          <button 
-            onClick={() => { 
-              setMessages([]); 
-              setCurrentConversationId(null); 
-              onConversationChange?.(null);
-            }}
-            className="text-lg font-semibold hover:bg-accent px-3 py-1.5 rounded-lg transition-colors"
-          >
-            {messages.length > 0 ? 'SanGPT' : 'SanGPT'}
-          </button>
-        </div>
+        <Button variant="ghost" size="icon" onClick={onOpenSidebar} className="hover:bg-accent">
+          <Menu className="h-5 w-5" />
+        </Button>
 
-        <div className="flex items-center gap-1">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="hover:bg-accent"
-          >
-            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button>
-          {user ? (
-            <>
-              <Button variant="ghost" size="icon" onClick={() => navigate('/explore')} className="hover:bg-accent">
-                <Compass className="h-5 w-5" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => { 
-                setMessages([]); 
-                setCurrentConversationId(null); 
-                onConversationChange?.(null);
-              }} className="hover:bg-accent">
-                <Edit3 className="h-5 w-5" />
-              </Button>
-              <Avatar className="h-8 w-8 bg-primary cursor-pointer ml-1" onClick={() => navigate('/settings')}>
-                <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                  {user.user_metadata?.display_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
-            </>
-          ) : (
-            <Button onClick={() => setShowAuthModal(true)} className="rounded-full px-6 ml-2">
-              Sign up
-            </Button>
-          )}
-        </div>
+        <span className="text-base font-semibold">{chatTitle}</span>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            setMessages([]);
+            setCurrentConversationId(null);
+            onConversationChange?.(null);
+          }}
+          className="hover:bg-accent"
+        >
+          <Edit3 className="h-5 w-5" />
+        </Button>
       </header>
 
+      {/* ─── Messages ─── */}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto relative overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
         {messages.length === 0 ? (
           <HomeScreen
@@ -519,9 +441,9 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
             user={user}
           />
         ) : (
-            <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-            {messages.map((message, idx) => (
-              <div key={message.id} className="message-enter">
+          <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+            {messages.map((message) => (
+              <div key={message.id} className="animate-fade-in">
                 {message.role === 'user' ? (
                   <div className="flex items-start gap-3 justify-end">
                     <div className="bg-primary/90 backdrop-blur-sm text-primary-foreground px-4 py-3 rounded-2xl max-w-[80%] shadow-md">
@@ -541,38 +463,35 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
                   </div>
                 ) : (
                   <div className="flex items-start gap-3">
-                    <Avatar className="h-7 w-7 bg-primary flex-shrink-0 mt-1 ai-response-reveal">
+                    <Avatar className="h-7 w-7 bg-primary flex-shrink-0 mt-1">
                       <AvatarFallback className="bg-primary text-primary-foreground text-sm font-bold">S</AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 space-y-2 ai-response-reveal">
-                       <StreamingMarkdown 
-                         content={message.content} 
-                         isStreaming={streamingMessageId === message.id}
-                       />
-                       {streamingMessageId !== message.id && (
-                         <MessageActions 
-                           messageId={message.id} 
-                           content={message.content} 
-                           role={message.role} 
-                           rating={message.rating} 
-                           onRegenerate={handleRegenerate} 
-                           onRatingChange={(r) => setMessages(p => p.map(m => m.id === message.id ? {...m, rating: r} : m))} 
-                         />
-                       )}
+                    <div className="flex-1 space-y-2">
+                      <StreamingMarkdown
+                        content={message.content}
+                        isStreaming={streamingMessageId === message.id}
+                      />
+                      {streamingMessageId !== message.id && (
+                        <MessageActions
+                          messageId={message.id}
+                          content={message.content}
+                          role={message.role}
+                          rating={message.rating}
+                          onRegenerate={handleRegenerate}
+                          onRatingChange={(r) => setMessages(p => p.map(m => m.id === message.id ? { ...m, rating: r } : m))}
+                        />
+                      )}
                     </div>
                   </div>
                 )}
               </div>
             ))}
-            
-            {/* Typing indicator - subtle dots when AI is thinking */}
-            {isLoading && !streamingMessageId && (
-              <TypingIndicator />
-            )}
+
+            {isLoading && !streamingMessageId && <TypingIndicator />}
             <div ref={messagesEndRef} />
           </div>
         )}
-        
+
         {showScrollButton && (
           <Button
             onClick={() => scrollToBottom()}
@@ -584,16 +503,14 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
         )}
       </div>
 
-      {/* Input Bar Section */}
+      {/* ─── Input ─── */}
       <div className="sticky bottom-0 pb-4 pt-2 bg-gradient-to-t from-background/90 via-background/70 to-transparent backdrop-blur-xl">
-        {/* Waveform animation when recording */}
         {isRecording && (
           <div className="mb-3 flex items-center justify-center">
             <WaveformAnimation />
           </div>
         )}
-        
-        {/* Attached files preview */}
+
         {attachedFiles.length > 0 && (
           <div className="max-w-3xl mx-auto px-3 mb-2">
             <div className="flex flex-wrap gap-2">
@@ -616,40 +533,39 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
             </div>
           </div>
         )}
-        
-        {/* New Glass Morphism Input Bar */}
+
         <ChatInputBar
           value={input}
           onChange={setInput}
           onSend={() => sendMessage(input)}
           onAttachment={(type) => {
             if (type === 'image' || type === 'camera') {
-              const input = document.createElement('input');
-              input.type = 'file';
-              input.accept = 'image/*';
-              if (type === 'camera') input.capture = 'environment';
-              input.multiple = true;
-              input.onchange = (e) => {
+              const inp = document.createElement('input');
+              inp.type = 'file';
+              inp.accept = 'image/*';
+              if (type === 'camera') inp.capture = 'environment';
+              inp.multiple = true;
+              inp.onchange = (e) => {
                 const files = Array.from((e.target as HTMLInputElement).files || []);
                 if (files.length > 0) {
                   setAttachedFiles(prev => [...prev, ...files]);
-                   alert({ title: "Files Attached", description: `${files.length} file(s) ready to send`, variant: "success" });
+                  alert({ title: "Files Attached", description: `${files.length} file(s) ready to send`, variant: "success" });
                 }
               };
-              input.click();
+              inp.click();
             } else {
-              const input = document.createElement('input');
-              input.type = 'file';
-              input.accept = '.pdf,.doc,.docx,.txt';
-              input.multiple = true;
-              input.onchange = (e) => {
+              const inp = document.createElement('input');
+              inp.type = 'file';
+              inp.accept = '.pdf,.doc,.docx,.txt';
+              inp.multiple = true;
+              inp.onchange = (e) => {
                 const files = Array.from((e.target as HTMLInputElement).files || []);
                 if (files.length > 0) {
                   setAttachedFiles(prev => [...prev, ...files]);
-                   alert({ title: "Files Attached", description: `${files.length} file(s) ready to send`, variant: "success" });
+                  alert({ title: "Files Attached", description: `${files.length} file(s) ready to send`, variant: "success" });
                 }
               };
-              input.click();
+              inp.click();
             }
           }}
           onModelSelect={() => setShowModelSelector(true)}
@@ -665,14 +581,13 @@ export const ChatInterface = ({ onOpenSidebar, conversationId, onConversationCha
 
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       <ModelSelectorModal isOpen={showModelSelector} onClose={() => setShowModelSelector(false)} selectedModel={selectedModel} onSelectModel={setSelectedModel} />
-      
-      <AttachmentModal 
-        isOpen={showAttachment} 
-        onClose={() => setShowAttachment(false)} 
+      <AttachmentModal
+        isOpen={showAttachment}
+        onClose={() => setShowAttachment(false)}
         onFileSelect={(files) => {
           setAttachedFiles(prev => [...prev, ...files]);
-           alert({ title: "Files Attached", description: `${files.length} file(s) ready to send`, variant: "success" });
-        }} 
+          alert({ title: "Files Attached", description: `${files.length} file(s) ready to send`, variant: "success" });
+        }}
       />
     </div>
   );
